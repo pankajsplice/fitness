@@ -4,7 +4,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import routers
 from django.urls import path, include
 
-from gofit_app.views import HeartInfoViewSet, SleepInfoViewSet, MotionInfoViewSet, WoHeartInfoViewSet
+from gofit_app.views import HeartInfoViewSet, SleepInfoViewSet, MotionInfoViewSet, WoHeartInfoViewSet, \
+    GetAverageMotionData, GetAverageSleepData
 
 router = routers.DefaultRouter()
 User = get_user_model()
@@ -17,4 +18,6 @@ router.register(r'wo-heart-info', WoHeartInfoViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('get-average-motion-data', GetAverageMotionData.as_view(), name='get_average_motion_data'),
+    path('get-average-sleep-data', GetAverageSleepData.as_view(), name='get_average_sleep_data'),
 ]
