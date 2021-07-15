@@ -1,8 +1,8 @@
 # # Database
 # # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 #
-import pymysql
-pymysql.install_as_MySQLdb()
+# import pymysql
+# pymysql.install_as_MySQLdb()
 ALLOWED_HOSTS = ['gofit.keycorp.in']
 DEBUG = True
 DATABASES = {
