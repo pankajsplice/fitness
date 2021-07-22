@@ -1,9 +1,10 @@
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from datetime import datetime,timedelta
@@ -12,32 +13,156 @@ from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo
 from .serializers import HeartInfoSerializer, MotionInfoSerializer, SleepInfoSerializer, WoHeartInfoSerializer
 
 
-@permission_classes((AllowAny,))
 @method_decorator(csrf_exempt, name='dispatch')
 class HeartInfoViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated, )
+    authentication_classes = (TokenAuthentication, )
     queryset = HeartInfo.objects.all()
     serializer_class = HeartInfoSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
 
-@permission_classes((AllowAny,))
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        try:
+            if serializer.is_valid():
+                if self.request.user.is_authenticated:
+                    self.perform_create(serializer)
+                    d = serializer.save()
+                    headers = self.get_success_headers(serializer.data)
+                    custom_data = {
+                        "error": False,
+                        "message": 'created successfully',
+                        "status_code": status.HTTP_201_CREATED,
+                        "data": serializer.data
+                    }
+                    return Response(custom_data)
+                return Response({"message": "Login Required."})
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            print(e)
+            return Response({"success": False})
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class MotionInfoViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated, )
+    authentication_classes = (TokenAuthentication, )
     queryset = MotionInfo.objects.all()
     serializer_class = MotionInfoSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
 
-@permission_classes((AllowAny,))
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        try:
+            if serializer.is_valid():
+                if self.request.user.is_authenticated:
+                    self.perform_create(serializer)
+                    d = serializer.save()
+                    headers = self.get_success_headers(serializer.data)
+                    custom_data = {
+                        "error": False,
+                        "message": 'created successfully',
+                        "status_code": status.HTTP_201_CREATED,
+                        "data": serializer.data
+                    }
+                    return Response(custom_data)
+                return Response({"message": "Login Required."})
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            print(e)
+            return Response({"success": False})
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class SleepInfoViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     queryset = SleepInfo.objects.all()
     serializer_class = SleepInfoSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
 
-@permission_classes((AllowAny,))
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        try:
+            if serializer.is_valid():
+                if self.request.user.is_authenticated:
+                    self.perform_create(serializer)
+                    d = serializer.save()
+                    headers = self.get_success_headers(serializer.data)
+                    custom_data = {
+                        "error": False,
+                        "message": 'created successfully',
+                        "status_code": status.HTTP_201_CREATED,
+                        "data": serializer.data
+                    }
+                    return Response(custom_data)
+                return Response({"message": "Login Required."})
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            print(e)
+            return Response({"success": False})
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class WoHeartInfoViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     queryset = WoHeartInfo.objects.all()
     serializer_class = WoHeartInfoSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        try:
+            if serializer.is_valid():
+                if self.request.user.is_authenticated:
+                    self.perform_create(serializer)
+                    d = serializer.save()
+                    headers = self.get_success_headers(serializer.data)
+                    custom_data = {
+                        "error": False,
+                        "message": 'created successfully',
+                        "status_code": status.HTTP_201_CREATED,
+                        "data": serializer.data
+                    }
+                    return Response(custom_data)
+                return Response({"message": "Login Required."})
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            print(e)
+            return Response({"success": False})
 
 
 @permission_classes((AllowAny,))
