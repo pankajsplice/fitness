@@ -1,10 +1,12 @@
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.contrib.auth import get_user_model
-from accounts.serializers import OtpSerializer, PasswordResetOtpSerializer
+from django.contrib.auth import get_user_model, login
+from accounts.serializers import OtpSerializer, PasswordResetOtpSerializer, LoginSerializer, UserSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 import random
 from django.core.mail import send_mail
 from go_fit.settings import DEFAULT_FROM_EMAIL, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
@@ -12,6 +14,8 @@ from twilio.rest import Client
 from django.views.decorators.debug import sensitive_post_parameters
 from django.utils.decorators import method_decorator
 from accounts.models import Otp
+from knox.models import AuthToken
+from knox.views import LoginView as KnoxLoginView
 
 User = get_user_model()
 
@@ -130,3 +134,30 @@ class PasswordResetOtpView(GenericAPIView):
         return Response(
             {"detail": "Password has been reset with the new password."}
         )
+
+
+class LoginAPI(KnoxLoginView):
+    permission_classes = (permissions.AllowAny,)
+
+    @csrf_exempt
+    def post(self, request, format=None):
+        try:
+            serializer = LoginSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data
+            login(request, user)
+            token = Token.objects.get(user=user)
+            return Response({
+                "error": False,
+                "status_code": status.HTTP_200_OK,
+                "message": "Login Successfully",
+                "data": UserSerializer(user).data,
+                "token": str(token)
+            })
+        except Exception as e:
+            return Response({
+                "error": True,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "message": e,
+                "data": {}
+            })
