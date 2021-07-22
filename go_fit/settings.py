@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'ckeditor_uploader',
     'sorl.thumbnail',
     'compressor',
+    'knox',
 ]
 
 CUSTOM_APPS = [

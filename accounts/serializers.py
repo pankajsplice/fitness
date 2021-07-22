@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.db.models import DateTimeField
 from django.utils.timezone import now
 from rest_auth.registration.serializers import RegisterSerializer as DefaultRegisterSerializer
@@ -129,3 +129,21 @@ class PasswordResetOtpSerializer(serializers.Serializer):
 
     def save(self):
         return self.set_password_form.save()
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        user = authenticate(**data)
+        if user and user.is_active:
+            return user
+        raise serializers.ValidationError("Incorrect Credentials")
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email',
+                  'first_name', 'last_name')
