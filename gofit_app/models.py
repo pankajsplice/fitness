@@ -13,7 +13,7 @@ class MotionInfo(ModelMixin):
 
     motion_calorie = models.CharField(max_length=100, null=True, blank=True)
     motion_data = models.CharField(max_length=100, null=True, blank=True)
-    motion_date = models.DateTimeField(null=True, blank=True)
+    motion_date = models.DateField(null=True, blank=True)
     motion_distance = models.CharField(max_length=100, null=True, blank=True)
     motion_step = models.CharField(max_length=100, null=True, blank=True)
 
