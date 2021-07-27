@@ -1,3 +1,4 @@
+import datetime
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -8,9 +9,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from datetime import datetime,timedelta
-from django.db.models import Avg, Min, Max
+from django.db.models import Avg, Min, Max, Sum
 from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo
 from .serializers import HeartInfoSerializer, MotionInfoSerializer, SleepInfoSerializer, WoHeartInfoSerializer
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -57,6 +59,8 @@ class MotionInfoViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication, )
     queryset = MotionInfo.objects.all()
     serializer_class = MotionInfoSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['motion_date']
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
@@ -213,3 +217,50 @@ class GetAverageSleepData(APIView):
                          "sleep_waking_number_avg": sleep_waking_number_avg.get('sleep_waking_number__avg'),
                          "sleep_waking_number_min": sleep_waking_number_min.get('sleep_waking_number__min'),
                          "sleep_waking_number_max": sleep_waking_number_max.get('sleep_waking_number__max')})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StepByDateViewSet(APIView):
+
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
+    def get(self, *args, **kwargs):
+        date = self.request.GET.get("date")
+        data = {}
+        queryset = MotionInfo.objects.filter(motion_date=date)
+        if date and queryset:
+            min = MotionInfo.objects.filter(motion_date=date).values('motion_data').aggregate(Sum('motion_data'))
+            data["total_steps"] = int(min.get('motion_data__sum'))
+            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
+        return Response({"error":True, "message":"No Data Found", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StepByDateRangeViewSet(APIView):
+
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
+    def get(self, *args, **kwargs):
+        from_date = self.request.GET.get("from_date")
+        to_date = self.request.GET.get("to_date")
+        day_dict = {}
+        data = {}
+        week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        if from_date and to_date:
+            queryset = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date)
+            min = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_data').aggregate(Min('motion_data'))
+            max = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_data').aggregate(Max('motion_data'))
+            avg = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_data').aggregate(Avg('motion_data'))
+            for day_name in week_list:
+                if day_dict.get(day_name) == None:
+                    day_dict[day_name] = 0
+            for day in queryset:
+                day_dict[str(day.motion_date.strftime("%A"))] = day.motion_step
+            data["min_step"] = int(min.get('motion_data__min'))
+            data["max_step"] = int(max.get('motion_data__max'))
+            data["avg_step"] = int(avg.get('motion_data__avg'))
+            data["weekly"] = day_dict
+            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
+        return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})

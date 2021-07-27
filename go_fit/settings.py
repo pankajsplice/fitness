@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 
     'debug_toolbar',
+    'django_filters',
     'ckeditor',
     'widget_tweaks',
     'ckeditor_uploader',
