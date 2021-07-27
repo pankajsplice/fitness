@@ -35,5 +35,4 @@ class WoHeartInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WoHeartInfo
-        fields = ('id', 'wo_heart_data', 'wo_heart_date', 'wo_heart_day_avg', 'wo_heart_day_max', 'wo_heart_day_min',
-                  'wo_heart_recent', 'wo_heart_sleep_avg', 'wo_heart_sleep_max', 'wo_heart_sleep_min', 'date_created', 'date_updated')
+        fields = ('id', 'wo_heart_data', 'wo_heart_date', 'date_created', 'date_updated')
