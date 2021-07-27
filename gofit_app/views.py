@@ -59,8 +59,6 @@ class MotionInfoViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication, )
     queryset = MotionInfo.objects.all()
     serializer_class = MotionInfoSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['motion_date']
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
