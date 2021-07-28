@@ -267,14 +267,14 @@ class StepByDateRangeViewSet(APIView):
             min = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Min('motion_step'))
             max = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Max('motion_step'))
             avg = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Avg('motion_step'))
+            data["min_step"] = min.get('motion_step__min')
+            data["max_step"] = max.get('motion_step__max')
+            data["avg_step"] = avg.get('motion_step__avg')
             for day_name in week_list:
                 if day_dict.get(day_name) == None:
                     day_dict[day_name] = 0
             for day in queryset:
-                day_dict[str(day.motion_date.strftime("%A"))] = day.motion_step
-            data["min_step"] = int(min.get('motion_step__min'))
-            data["max_step"] = int(max.get('motion_step__max'))
-            data["avg_step"] = int(avg.get('motion_step__avg'))
+                day_dict[str(day.motion_date.strftime("%A"))] = int(day.motion_step)
             data["weekly"] = day_dict
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
