@@ -68,16 +68,31 @@ class MotionInfoViewSet(viewsets.ModelViewSet):
         try:
             if serializer.is_valid():
                 if self.request.user.is_authenticated:
-                    self.perform_create(serializer)
-                    d = serializer.save()
-                    headers = self.get_success_headers(serializer.data)
-                    custom_data = {
-                        "error": False,
-                        "message": 'created successfully',
-                        "status_code": status.HTTP_201_CREATED,
-                        "data": serializer.data
-                    }
-                    return Response(custom_data)
+                    motion_data = MotionInfo.objects.filter(motion_date=serializer.validated_data.get('motion_date')).first()
+                    if motion_data:
+                        motion_data.motion_calorie = serializer.validated_data.get('motion_calorie')
+                        motion_data.motion_data = serializer.validated_data.get('motion_data')
+                        motion_data.motion_distance = serializer.validated_data.get('motion_distance')
+                        motion_data.motion_step = serializer.validated_data.get('motion_step')
+                        motion_data.save()
+                        custom_data = {
+                            "error": False,
+                            "message": 'updated successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
+                    else:
+                        self.perform_create(serializer)
+                        serializer.save()
+                        self.get_success_headers(serializer.data)
+                        custom_data = {
+                            "error": False,
+                            "message": 'created successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
                 return Response({"message": "Login Required."})
             error_data = {
                 "error": True,
@@ -228,8 +243,9 @@ class StepByDateViewSet(APIView):
         data = {}
         queryset = MotionInfo.objects.filter(motion_date=date)
         if date and queryset:
-            min = MotionInfo.objects.filter(motion_date=date).values('motion_data').aggregate(Sum('motion_data'))
-            data["total_steps"] = int(min.get('motion_data__sum'))
+            # min = MotionInfo.objects.filter(motion_date=date).values('motion_step').aggregate(Sum('motion_step'))
+            steps = MotionInfo.objects.filter(motion_date=date).first()
+            data["total_steps"] = int(steps.motion_step)
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"No Data Found", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
 
@@ -248,17 +264,17 @@ class StepByDateRangeViewSet(APIView):
         week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         if from_date and to_date:
             queryset = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date)
-            min = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_data').aggregate(Min('motion_data'))
-            max = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_data').aggregate(Max('motion_data'))
-            avg = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_data').aggregate(Avg('motion_data'))
+            min = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Min('motion_step'))
+            max = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Max('motion_step'))
+            avg = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Avg('motion_step'))
             for day_name in week_list:
                 if day_dict.get(day_name) == None:
                     day_dict[day_name] = 0
             for day in queryset:
                 day_dict[str(day.motion_date.strftime("%A"))] = day.motion_step
-            data["min_step"] = int(min.get('motion_data__min'))
-            data["max_step"] = int(max.get('motion_data__max'))
-            data["avg_step"] = int(avg.get('motion_data__avg'))
+            data["min_step"] = int(min.get('motion_step__min'))
+            data["max_step"] = int(max.get('motion_step__max'))
+            data["avg_step"] = int(avg.get('motion_step__avg'))
             data["weekly"] = day_dict
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
