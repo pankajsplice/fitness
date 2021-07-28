@@ -68,16 +68,31 @@ class MotionInfoViewSet(viewsets.ModelViewSet):
         try:
             if serializer.is_valid():
                 if self.request.user.is_authenticated:
-                    self.perform_create(serializer)
-                    d = serializer.save()
-                    headers = self.get_success_headers(serializer.data)
-                    custom_data = {
-                        "error": False,
-                        "message": 'created successfully',
-                        "status_code": status.HTTP_201_CREATED,
-                        "data": serializer.data
-                    }
-                    return Response(custom_data)
+                    motion_data = MotionInfo.objects.filter(motion_date=serializer.validated_data.get('motion_date')).first()
+                    if motion_data:
+                        motion_data.motion_calorie = serializer.validated_data.get('motion_calorie')
+                        motion_data.motion_data = serializer.validated_data.get('motion_data')
+                        motion_data.motion_distance = serializer.validated_data.get('motion_distance')
+                        motion_data.motion_step = serializer.validated_data.get('motion_step')
+                        motion_data.save()
+                        custom_data = {
+                            "error": False,
+                            "message": 'updated successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
+                    else:
+                        self.perform_create(serializer)
+                        serializer.save()
+                        self.get_success_headers(serializer.data)
+                        custom_data = {
+                            "error": False,
+                            "message": 'created successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
                 return Response({"message": "Login Required."})
             error_data = {
                 "error": True,
@@ -228,8 +243,9 @@ class StepByDateViewSet(APIView):
         data = {}
         queryset = MotionInfo.objects.filter(motion_date=date)
         if date and queryset:
-            min = MotionInfo.objects.filter(motion_date=date).values('motion_step').aggregate(Sum('motion_step'))
-            data["total_steps"] = int(min.get('motion_step__sum'))
+            # min = MotionInfo.objects.filter(motion_date=date).values('motion_step').aggregate(Sum('motion_step'))
+            steps = MotionInfo.objects.filter(motion_date=date).first()
+            data["total_steps"] = int(steps.motion_step)
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"No Data Found", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
 

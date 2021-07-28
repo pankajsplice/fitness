@@ -9,10 +9,10 @@ class HeartInfo(ModelMixin):
 
 
 class MotionInfo(ModelMixin):
-    motion_calorie = models.IntegerField(null=True, blank=True)
+    motion_calorie = models.FloatField(null=True, blank=True)
     motion_data = models.CharField(max_length=100, null=True, blank=True)
     motion_date = models.DateField(null=True, blank=True)
-    motion_distance = models.IntegerField(null=True, blank=True)
+    motion_distance = models.FloatField(null=True, blank=True)
     motion_step = models.IntegerField(null=True, blank=True)
 
 
