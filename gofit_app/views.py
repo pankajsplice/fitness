@@ -264,12 +264,12 @@ class StepByDateRangeViewSet(APIView):
         week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         if from_date and to_date:
             queryset = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date)
-            min = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Min('motion_step'))
-            max = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Max('motion_step'))
-            avg = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date).values('motion_step').aggregate(Avg('motion_step'))
-            data["min_step"] = min.get('motion_step__min')
-            data["max_step"] = max.get('motion_step__max')
-            data["avg_step"] = avg.get('motion_step__avg')
+            min_steps = queryset.values('motion_step').aggregate(Min('motion_step'))
+            max_steps = queryset.values('motion_step').aggregate(Max('motion_step'))
+            avg_steps = queryset.values('motion_step').aggregate(Avg('motion_step'))
+            data["min_step"] = min_steps.get('motion_step__min')
+            data["max_step"] = max_steps.get('motion_step__max')
+            data["avg_step"] = avg_steps.get('motion_step__avg')
             for day_name in week_list:
                 if day_dict.get(day_name) == None:
                     day_dict[day_name] = 0
