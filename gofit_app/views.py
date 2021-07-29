@@ -1,4 +1,5 @@
-import datetime
+import datetime as dt
+import time
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from datetime import datetime,timedelta
 from django.db.models import Avg, Min, Max, Sum
+from accounts.models import UserProfile
 from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo
 from .serializers import HeartInfoSerializer, MotionInfoSerializer, SleepInfoSerializer, WoHeartInfoSerializer
 from django_filters.rest_framework import DjangoFilterBackend
@@ -121,16 +123,34 @@ class SleepInfoViewSet(viewsets.ModelViewSet):
         try:
             if serializer.is_valid():
                 if self.request.user.is_authenticated:
-                    self.perform_create(serializer)
-                    d = serializer.save()
-                    headers = self.get_success_headers(serializer.data)
-                    custom_data = {
-                        "error": False,
-                        "message": 'created successfully',
-                        "status_code": status.HTTP_201_CREATED,
-                        "data": serializer.data
-                    }
-                    return Response(custom_data)
+                    sleep_data = SleepInfo.objects.filter(sleep_date=serializer.validated_data.get('sleep_date')).first()
+                    if sleep_data:
+                        sleep_data.sleep_data = serializer.validated_data.get('sleep_data')
+                        sleep_data.sleep_deep_time = serializer.validated_data.get('sleep_deep_time')
+                        sleep_data.sleep_light_time = serializer.validated_data.get('sleep_light_time')
+                        sleep_data.sleep_stayup_time = serializer.validated_data.get('sleep_stayup_time')
+                        sleep_data.sleep_total_time = serializer.validated_data.get('sleep_total_time')
+                        sleep_data.sleep_waking_number = serializer.validated_data.get('sleep_waking_number')
+                        sleep_data.total_time = serializer.validated_data.get('total_time')
+                        sleep_data.save()
+                        custom_data = {
+                            "error": False,
+                            "message": 'updated successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
+                    else:
+                        self.perform_create(serializer)
+                        serializer.save()
+                        self.get_success_headers(serializer.data)
+                        custom_data = {
+                            "error": False,
+                            "message": 'created successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
                 return Response({"message": "Login Required."})
             error_data = {
                 "error": True,
@@ -275,6 +295,87 @@ class StepByDateRangeViewSet(APIView):
                     day_dict[day_name] = 0
             for day in queryset:
                 day_dict[str(day.motion_date.strftime("%A"))] = int(day.motion_step)
+            data["weekly"] = day_dict
+            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
+        return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SetSleepGoalView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
+    def post(self, *args, **kwargs):
+        data = {}
+        try:
+            sleep_goal = self.request.data['sleep_goal']
+            if sleep_goal:
+                profile_data = UserProfile.objects.filter(user=self.request.user).first()
+                profile_data.sleep_goal = sleep_goal
+                profile_data.save()
+                data['username'] = profile_data.user.username
+                data['email'] = profile_data.user.email
+                data['sleep_goal'] = profile_data.sleep_goal
+                return Response({"error": False, "message": "Sleep Goal Saved", "status_code": status.HTTP_200_OK, "data": data})
+            else:
+                return Response({"error": True, "message": "Please Enter Sleep Goal", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+        except Exception as e:
+            print(e)
+            return Response(
+                {"error": True, "message": e, "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SleepDataByDateAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
+    def get(self, *args, **kwargs):
+        date = self.request.GET.get("date")
+        data = {}
+        queryset = SleepInfo.objects.filter(sleep_date=date)
+        if date and queryset:
+            sleep_time = SleepInfo.objects.filter(sleep_date=date).latest('id')
+            x = time.strptime(str(sleep_time.sleep_total_time), '%H:%M:%S')
+            y = time.strptime(str(self.request.user.profile.sleep_goal), '%H:%M:%S')
+            total_sleep_time_seconds = dt.timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds()
+            sleep_goal_seconds = dt.timedelta(hours=y.tm_hour, minutes=y.tm_min, seconds=y.tm_sec).total_seconds()
+            sleep_time_percentage = int(total_sleep_time_seconds*100/sleep_goal_seconds)
+            print(int(sleep_time_percentage))
+            
+            data["sleep_data"] = sleep_time.sleep_data
+            data["sleep_date"] = sleep_time.sleep_date
+            data["sleep_deep_time"] = sleep_time.sleep_deep_time
+            data["sleep_light_time"] = sleep_time.sleep_light_time
+            data["sleep_stayup_time"] = sleep_time.sleep_stayup_time
+            data["sleep_total_time"] = sleep_time.sleep_total_time
+            data["sleep_waking_number"] = sleep_time.sleep_waking_number
+            data["total_time"] = sleep_time.total_time
+            data["sleep_time_percentage"] = str(int(sleep_time_percentage))+"%"
+            return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
+        return Response(
+            {"error": True, "message": "No Data Found", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SleepDataByDateRangeAPI(APIView):
+
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
+    def get(self, *args, **kwargs):
+        from_date = self.request.GET.get("from_date")
+        to_date = self.request.GET.get("to_date")
+        day_dict = {}
+        data = {}
+        week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        if from_date and to_date:
+            queryset = SleepInfo.objects.filter(sleep_date__gte=from_date, sleep_date__lte=to_date)
+            for day_name in week_list:
+                if day_dict.get(day_name) == None:
+                    day_dict[day_name] = 0
+            for day in queryset:
+                day_dict[str(day.sleep_date.strftime("%A"))] = day.sleep_total_time
             data["weekly"] = day_dict
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
