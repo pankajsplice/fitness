@@ -398,7 +398,7 @@ class SleepDataByDateRangeAPI(APIView):
             queryset = SleepInfo.objects.filter(sleep_date__gte=from_date, sleep_date__lte=to_date)
             for day_name in week_list:
                 if day_dict.get(day_name) == None:
-                    day_dict[day_name] = 0
+                    day_dict[day_name] = "00:00:00"
             for day in queryset:
                 day_dict[str(day.sleep_date.strftime("%A"))] = day.sleep_total_time
             data["weekly"] = day_dict
