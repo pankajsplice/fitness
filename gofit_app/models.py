@@ -23,6 +23,7 @@ class SleepInfo(ModelMixin):
     sleep_light_time = models.TimeField(null=True, blank=True)
     sleep_stayup_time = models.TimeField(null=True, blank=True)
     sleep_total_time = models.TimeField(null=True, blank=True)
+    avg_heart_rate = models.PositiveIntegerField(default=0, null=True, blank=True)
     sleep_waking_number = models.IntegerField(null=True, blank=True)
     total_time = models.TimeField(max_length=100, null=True, blank=True)
 

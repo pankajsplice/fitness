@@ -326,6 +326,31 @@ class SetSleepGoalView(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class SetStepGoalView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
+    def post(self, *args, **kwargs):
+        data = {}
+        try:
+            step_goal = self.request.data['step_goal']
+            if step_goal:
+                profile_data = UserProfile.objects.filter(user=self.request.user).first()
+                profile_data.step_goal = step_goal
+                profile_data.save()
+                data['username'] = profile_data.user.username
+                data['email'] = profile_data.user.email
+                data['step_goal'] = profile_data.step_goal
+                return Response({"error": False, "message": "Step Goal Saved", "status_code": status.HTTP_200_OK, "data": data})
+            else:
+                return Response({"error": True, "message": "Please Enter Step Goal", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+        except Exception as e:
+            print(e)
+            return Response(
+                {"error": True, "message": e, "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class SleepDataByDateAPI(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)

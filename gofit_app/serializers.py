@@ -28,7 +28,7 @@ class SleepInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = SleepInfo
         fields = ('id', 'sleep_data', 'sleep_date', 'sleep_deep_time', 'sleep_light_time', 'sleep_stayup_time',
-                  'sleep_total_time', 'sleep_waking_number', 'total_time', 'date_created', 'date_updated')
+                  'sleep_total_time', 'avg_heart_rate', 'sleep_waking_number', 'total_time', 'date_created', 'date_updated')
 
 
 class WoHeartInfoSerializer(serializers.ModelSerializer):
