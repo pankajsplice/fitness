@@ -32,16 +32,30 @@ class HeartInfoViewSet(viewsets.ModelViewSet):
         try:
             if serializer.is_valid():
                 if self.request.user.is_authenticated:
-                    self.perform_create(serializer)
-                    d = serializer.save()
-                    headers = self.get_success_headers(serializer.data)
-                    custom_data = {
-                        "error": False,
-                        "message": 'created successfully',
-                        "status_code": status.HTTP_201_CREATED,
-                        "data": serializer.data
-                    }
-                    return Response(custom_data)
+                    heart_info = HeartInfo.objects.filter(date_created__date=datetime.now().date()).first()
+                    if heart_info:
+                        heart_info.heart_info_dbp = serializer.validated_data.get('heart_info_dbp')
+                        heart_info.heart_info_hr = serializer.validated_data.get('heart_info_hr')
+                        heart_info.heart_info_sbp = serializer.validated_data.get('heart_info_sbp')
+                        heart_info.save()
+                        custom_data = {
+                            "error": False,
+                            "message": 'updated successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
+                    else:
+                        self.perform_create(serializer)
+                        serializer.save()
+                        self.get_success_headers(serializer.data)
+                        custom_data = {
+                            "error": False,
+                            "message": 'created successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
                 return Response({"message": "Login Required."})
             error_data = {
                 "error": True,
@@ -404,3 +418,34 @@ class SleepDataByDateRangeAPI(APIView):
             data["weekly"] = day_dict
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+
+
+# ----------------------------
+
+@method_decorator(csrf_exempt, name='dispatch')
+class BloodPressureDateRangeViewSet(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def get(self, *args, **kwargs):
+        from_date = self.request.GET.get("from_date")
+        to_date = self.request.GET.get("to_date")
+        day_dict = {}
+        data = {}
+        week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        if from_date and to_date:
+            queryset = HeartInfo.objects.filter(date_created__date__gte=from_date, date_created__date__lte=to_date)
+            avg_heart_info_sbp = queryset.values('heart_info_sbp').aggregate(Avg('heart_info_sbp'))
+            avg_heart_info_dbp = queryset.values('heart_info_dbp').aggregate(Avg('heart_info_dbp'))
+            avg_heart_info_hr = queryset.values('heart_info_hr').aggregate(Avg('heart_info_hr'))
+            data["heart_info_sbp"] = avg_heart_info_sbp.get('heart_info_sbp__avg')
+            data["heart_info_dbp"] = avg_heart_info_dbp.get('heart_info_dbp__avg')
+            data["heart_info_hr"] = avg_heart_info_hr.get('heart_info_hr__avg')
+            for day_name in week_list:
+                if day_dict.get(day_name) == None:
+                    day_dict[day_name] = 0
+            for day in queryset:
+                day_dict[str(day.date_created.strftime("%A"))] = int(day.heart_info_hr)
+            data["weekly"] = day_dict
+            return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
+        return Response({"error": True, "message": "Failed", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
