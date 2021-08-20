@@ -10,14 +10,14 @@ class HeartInfo(ModelMixin):
 
 class MotionInfo(ModelMixin):
     motion_calorie = models.FloatField(null=True, blank=True)
-    motion_data = models.CharField(max_length=100, null=True, blank=True)
+    motion_data = models.TextField(null=True, blank=True)
     motion_date = models.DateField(null=True, blank=True)
     motion_distance = models.FloatField(null=True, blank=True)
     motion_step = models.IntegerField(null=True, blank=True)
 
 
 class SleepInfo(ModelMixin):
-    sleep_data = models.CharField(max_length=100, null=True, blank=True)
+    sleep_data = models.TextField(null=True, blank=True)
     sleep_date = models.DateField(null=True, blank=True)
     sleep_deep_time = models.TimeField(null=True, blank=True)
     sleep_light_time = models.TimeField(null=True, blank=True)
@@ -29,5 +29,5 @@ class SleepInfo(ModelMixin):
 
 
 class WoHeartInfo(ModelMixin):
-    wo_heart_data = models.CharField(max_length=100, null=True, blank=True)
+    wo_heart_data = models.TextField(null=True, blank=True)
     wo_heart_date = models.DateField(null=True, blank=True)
