@@ -3,9 +3,9 @@ from utils.models import ModelMixin
 
 
 class HeartInfo(ModelMixin):
-    heart_info_dbp = models.CharField(max_length=100, null=True, blank=True)
+    heart_info_dbp = models.IntegerField(null=True, blank=True)
     heart_info_hr = models.IntegerField(null=True, blank=True)
-    heart_info_sbp = models.CharField(max_length=100, null=True, blank=True)
+    heart_info_sbp = models.IntegerField(null=True, blank=True)
 
 
 class MotionInfo(ModelMixin):

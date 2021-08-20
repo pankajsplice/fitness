@@ -404,3 +404,34 @@ class SleepDataByDateRangeAPI(APIView):
             data["weekly"] = day_dict
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+
+
+# ----------------------------
+
+@method_decorator(csrf_exempt, name='dispatch')
+class BloodPressureDateRangeViewSet(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def get(self, *args, **kwargs):
+        from_date = self.request.GET.get("from_date")
+        to_date = self.request.GET.get("to_date")
+        day_dict = {}
+        data = {}
+        week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        if from_date and to_date:
+            queryset = HeartInfo.objects.filter(date_created__date__gte=from_date, date_created__date__lte=to_date)
+            avg_heart_info_sbp = queryset.values('heart_info_sbp').aggregate(Avg('heart_info_sbp'))
+            avg_heart_info_dbp = queryset.values('heart_info_dbp').aggregate(Avg('heart_info_dbp'))
+            avg_heart_info_hr = queryset.values('heart_info_hr').aggregate(Avg('heart_info_hr'))
+            data["heart_info_sbp"] = avg_heart_info_sbp.get('heart_info_sbp__avg')
+            data["heart_info_dbp"] = avg_heart_info_dbp.get('heart_info_dbp__avg')
+            data["heart_info_hr"] = avg_heart_info_hr.get('heart_info_hr__avg')
+            for day_name in week_list:
+                if day_dict.get(day_name) == None:
+                    day_dict[day_name] = 0
+            for day in queryset:
+                day_dict[str(day.date_created.strftime("%A"))] = int(day.heart_info_hr)
+            data["weekly"] = day_dict
+            return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
+        return Response({"error": True, "message": "Failed", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
