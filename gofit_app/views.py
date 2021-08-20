@@ -32,16 +32,30 @@ class HeartInfoViewSet(viewsets.ModelViewSet):
         try:
             if serializer.is_valid():
                 if self.request.user.is_authenticated:
-                    self.perform_create(serializer)
-                    d = serializer.save()
-                    headers = self.get_success_headers(serializer.data)
-                    custom_data = {
-                        "error": False,
-                        "message": 'created successfully',
-                        "status_code": status.HTTP_201_CREATED,
-                        "data": serializer.data
-                    }
-                    return Response(custom_data)
+                    heart_info = HeartInfo.objects.filter(date_created__date=datetime.now().date()).first()
+                    if heart_info:
+                        heart_info.heart_info_dbp = serializer.validated_data.get('heart_info_dbp')
+                        heart_info.heart_info_hr = serializer.validated_data.get('heart_info_hr')
+                        heart_info.heart_info_sbp = serializer.validated_data.get('heart_info_sbp')
+                        heart_info.save()
+                        custom_data = {
+                            "error": False,
+                            "message": 'updated successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
+                    else:
+                        self.perform_create(serializer)
+                        serializer.save()
+                        self.get_success_headers(serializer.data)
+                        custom_data = {
+                            "error": False,
+                            "message": 'created successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
                 return Response({"message": "Login Required."})
             error_data = {
                 "error": True,
