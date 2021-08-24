@@ -6,7 +6,7 @@ from django.urls import path, include
 
 from gofit_app.views import HeartInfoViewSet, SleepInfoViewSet, MotionInfoViewSet, WoHeartInfoViewSet, \
     GetAverageMotionData, GetAverageSleepData, StepByDateViewSet, StepByDateRangeViewSet, SetSleepGoalView, \
-    SleepDataByDateRangeAPI, SleepDataByDateAPI, SetStepGoalView,BloodPressureDateRangeViewSet
+    SleepDataByDateRangeAPI, SleepDataByDateAPI, SetStepGoalView,BloodPressureDateRangeViewSet, StepByDateRangeHeart, GetMotionData
 
 router = routers.DefaultRouter()
 User = get_user_model()
@@ -28,4 +28,6 @@ urlpatterns = [
     path('sleep-time-by-date-range', SleepDataByDateRangeAPI.as_view(), name='sleep_time_by_date_range'),
     path('set-step-goal', SetStepGoalView.as_view(), name='set_step_goal'),
     path('set-sleep-goal', SetSleepGoalView.as_view(), name='set_sleep_goal'),
+    path('get-motion-data', GetMotionData.as_view(), name='get_motion_data'),
+    path('steps-by-date-range_heart', StepByDateRangeHeart.as_view(), name='steps_by_date_range_heart'),
 ]
