@@ -521,13 +521,13 @@ class GetMotionData(APIView):
             as3 = -((sum_mo_step_7-sum_mo1_step_after)%100)
         else:
             as3 = ((sum_mo_step_7-sum_mo1_step_after)%100)
-        data["calorie_total"] = sum_mo_7
+        data["calorie_total"] = round(sum_mo_7,2)
         
-        data["calorie_percentage"] = as1
-        data["distance_total"] = sum_mo_dist_7
-        data["distance_percentage"] = as2
-        data["step_total"] = sum_mo_step_7
-        data["step_percentage"] = as3
+        data["calorie_percentage"] = round(as1,2)
+        data["distance_total"] = round(sum_mo_dist_7,2)
+        data["distance_percentage"] = round(as2,2)
+        data["step_total"] = round(sum_mo_step_7,2)
+        data["step_percentage"] = round(as3,2)
         
         for day_name in week_list:
                 if day_dict.get(day_name) == None:
