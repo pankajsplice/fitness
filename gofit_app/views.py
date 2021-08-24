@@ -449,3 +449,123 @@ class BloodPressureDateRangeViewSet(APIView):
             data["weekly"] = day_dict
             return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
         return Response({"error": True, "message": "Failed", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+
+
+
+
+@permission_classes((IsAuthenticated,))
+@method_decorator(csrf_exempt, name='dispatch')
+class GetMotionData(APIView):
+    
+    def get(self, request, *args, **kwargs):
+        day_dict = {}
+        data = {}
+        week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        date_now = timezone.now().date()-timedelta(days=7)
+        queryset = MotionInfo.objects.filter(motion_date__gte=date_now)
+        date_after=date_now-timedelta(days=7)        
+        queryset1 = MotionInfo.objects.filter(motion_date__gte=str(date_after), motion_date__lte=str(date_now))
+        motion_calorie_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_calorie').aggregate(Avg('motion_calorie'))
+        motion_calorie_sum = queryset.values('motion_calorie')
+        motion_len=len(motion_calorie_sum)
+        sum_mo_7=0
+        for i in range(0,motion_len):
+            b=motion_calorie_sum[i].get('motion_calorie')
+            sum_mo_7=sum_mo_7+b
+        
+        motion_calorie_sum1 = queryset1.values('motion_calorie')
+        motion_len1=len(motion_calorie_sum1)
+        sum_mo1_after=0
+        for i in range(0,motion_len1):
+            b=motion_calorie_sum1[i].get('motion_calorie')
+            sum_mo1_after=sum_mo1_after+b
+        
+        
+
+        motion_distance_sum = queryset.values('motion_distance')
+        motion_len=len(motion_distance_sum)
+        sum_mo_dist_7=0
+        for i in range(0,motion_len):
+            b=motion_distance_sum[i].get('motion_distance')
+            sum_mo_dist_7=sum_mo_dist_7+b
+        
+        motion_distance_sum1 = queryset1.values('motion_distance')
+        motion_len1=len(motion_distance_sum1)
+        sum_mo1_dist_after=0
+        for i in range(0,motion_len1):
+            b=motion_distance_sum1[i].get('motion_distance')
+            sum_mo1_dist_after=sum_mo1_dist_after+b
+
+        motion_step_sum = queryset.values('motion_step')
+        motion_len=len(motion_step_sum)
+        sum_mo_step_7=0
+        for i in range(0,motion_len):
+            b=motion_step_sum[i].get('motion_step')
+            sum_mo_step_7=sum_mo_step_7+b
+        motion_step_sum1 = queryset1.values('motion_step')
+        motion_len1=len(motion_step_sum1)
+        sum_mo1_step_after=0
+        for i in range(0,motion_len1):
+            b=motion_step_sum1[i].get('motion_step')
+            sum_mo1_step_after=sum_mo1_step_after+b
+        
+        if sum_mo1_after > sum_mo_7:
+            as1 = -((sum_mo_7-sum_mo1_after)%100)
+        else:
+            as1 = ((sum_mo_7-sum_mo1_after)%100)
+        if sum_mo1_dist_after > sum_mo_dist_7:
+            as2 = -((sum_mo_dist_7-sum_mo1_dist_after)%100)
+        else:
+            as2 = ((sum_mo_dist_7-sum_mo1_dist_after)%100)
+        if sum_mo1_step_after > sum_mo_step_7:
+            as3 = -((sum_mo_step_7-sum_mo1_step_after)%100)
+        else:
+            as3 = ((sum_mo_step_7-sum_mo1_step_after)%100)
+        data["calorie_total"] = sum_mo_7
+        
+        data["calorie_percentage"] = as1
+        data["distance_total"] = sum_mo_dist_7
+        data["distance_percentage"] = as2
+        data["step_total"] = sum_mo_step_7
+        data["step_percentage"] = as3
+        
+        for day_name in week_list:
+                if day_dict.get(day_name) == None:
+                    day_dict[day_name] = 0
+        for day in queryset:
+            day_dict[str(day.motion_date.strftime("%A"))] = int(day.motion_step)
+        data["weekly"] = day_dict
+       
+        return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
+        
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StepByDateRangeHeart(APIView):
+
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
+    def get(self, *args, **kwargs):
+        from_date = self.request.GET.get("from_date")
+        to_date = self.request.GET.get("to_date")
+        to_date_con=datetime.strptime(to_date, "%Y-%m-%d").date()
+        
+        to_date_con=to_date_con + timedelta(days=1)
+        
+        day_dict = {}
+        data = {}
+        week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        if from_date and to_date:         
+            queryset = HeartInfo.objects.filter(date_created__gte=from_date, date_created__lte=to_date_con)
+            heart_info_hr_min = queryset.values('heart_info_hr').aggregate(Min('heart_info_hr'))
+            heart_info_hr_max = queryset.values('heart_info_hr').aggregate(Max('heart_info_hr'))
+            heart_info_hr_avg = queryset.values('heart_info_hr').aggregate(Avg('heart_info_hr')) 
+            data["heart_info_hr_min"] = heart_info_hr_min.get('heart_info_hr__min')
+            data["heart_info_hr_max"] = heart_info_hr_max.get('heart_info_hr__max')
+            data["heart_info_hr_avg"] = round(heart_info_hr_avg.get('heart_info_hr__avg'),2)
+
+            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
+        return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+
+
