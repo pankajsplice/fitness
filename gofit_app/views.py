@@ -563,7 +563,11 @@ class StepByDateRangeHeart(APIView):
             heart_info_hr_avg = queryset.values('heart_info_hr').aggregate(Avg('heart_info_hr')) 
             data["heart_info_hr_min"] = heart_info_hr_min.get('heart_info_hr__min')
             data["heart_info_hr_max"] = heart_info_hr_max.get('heart_info_hr__max')
-            data["heart_info_hr_avg"] = round(heart_info_hr_avg.get('heart_info_hr__avg'),2)
+            try:
+                data["heart_info_hr_avg"] = round(heart_info_hr_avg.get('heart_info_hr__avg'),2)
+                
+            except:
+                data["heart_info_hr_avg"] = heart_info_hr_avg.get('heart_info_hr__avg')
 
             return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
