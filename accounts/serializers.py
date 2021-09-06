@@ -3,7 +3,10 @@ from django.db.models import DateTimeField
 from django.utils.timezone import now
 from rest_auth.registration.serializers import RegisterSerializer as DefaultRegisterSerializer
 from rest_framework import serializers
-from accounts.models import STAFF_TYPE, Otp
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+
+from accounts.models import STAFF_TYPE, Otp, GENDER_TYPE
 from accounts.models import UserProfile
 from django.conf import settings
 from django.contrib.auth.forms import SetPasswordForm
@@ -12,28 +15,37 @@ User = get_user_model()
 
 
 class RegisterSerializer(DefaultRegisterSerializer):
-    """
-
-    """
     username = serializers.CharField(max_length=50)
     first_name = serializers.CharField(max_length=20)
-    last_name = serializers.CharField(max_length=20)
+    last_name = serializers.CharField(max_length=20, required=False)
     email = serializers.EmailField(required=True)
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
-    mobile = serializers.CharField(max_length=15)
-    type = serializers.ChoiceField(choices=STAFF_TYPE)
-    profile_pic = serializers.ImageField(required=False, allow_null=True)
+    mobile = serializers.CharField(max_length=15, required=False)
+    nick_name = serializers.CharField(max_length=15, required=False)
+    height = serializers.CharField(max_length=50, required=False)
+    weight = serializers.CharField(max_length=50, required=False)
+    date_of_birth = serializers.DateField(required=True)
+    gender = serializers.ChoiceField(choices=GENDER_TYPE, required=True)
+    profile_pic = serializers.ImageField(required=False)
 
     def custom_signup(self, request, user):
         mobile = self.validated_data.get('mobile', '')
-        type = self.validated_data.get('type', '')
+        nick_name = self.validated_data.get('nick_name', '')
+        height = self.validated_data.get('height', '')
+        weight = self.validated_data.get('weight', '')
+        date_of_birth = self.validated_data.get('date_of_birth', '')
+        gender = self.validated_data.get('gender', '')
         profile_pic = self.validated_data.get('profile_pic', '')
         user_profile = UserProfile(
             user=user,
             mobile=mobile,
-            type=type,
-            profile_pic=profile_pic,
+            nick_name=nick_name,
+            height=height,
+            weight=weight,
+            date_of_birth=date_of_birth,
+            gender=gender,
+            profile_pic=profile_pic
         )
         user_profile.save()
 
@@ -49,19 +61,20 @@ class RegisterSerializer(DefaultRegisterSerializer):
             'first_name': self.validated_data.get('first_name', ''),
             'last_name': self.validated_data.get('last_name', ''),
             'mobile': self.validated_data.get('mobile', ''),
-            'type': self.validated_data.get('type', ''),
+            'nick_name': self.validated_data.get('nick_name', ''),
+            'height': self.validated_data.get('height', ''),
+            'weight': self.validated_data.get('weight', ''),
+            'date_of_birth': self.validated_data.get('date_of_birth', ''),
+            'gender': self.validated_data.get('gender', ''),
             'profile_pic': self.validated_data.get('profile_pic', '')
         }
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """
-
-    """
 
     class Meta:
         model = UserProfile
-        fields = ('mobile', 'type', 'profile_pic')
+        fields = ('mobile', 'profile_pic')
 
 
 class UserDetailsSerializer(serializers.ModelSerializer):

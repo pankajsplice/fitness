@@ -20,7 +20,8 @@ from django.conf.urls.static import static
 from utils.routers import DefaultRouter
 from django.views.generic import TemplateView
 from django.conf.urls import url
-from accounts.views import LoginAPI
+from accounts.views import LoginAPI, RegisterAPIView
+
 router = DefaultRouter()
 
 urlpatterns = [
@@ -31,6 +32,7 @@ urlpatterns = [
     path('api/profile/', include('accounts.urls')),
     path('api/gofit/', include('gofit_app.urls')),
     path('api/registrations/', include('rest_auth.registration.urls')),
+    path('api/register/', RegisterAPIView.as_view(), name='register'),
     path('', TemplateView.as_view(template_name="index.html")),
     path('login/', TemplateView.as_view(template_name="account/user-login.html")),
     path('api/login/', LoginAPI.as_view()),
