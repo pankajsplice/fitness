@@ -1,9 +1,11 @@
 from django.views.decorators.csrf import csrf_exempt
+from rest_auth.app_settings import create_token
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model, login
-from accounts.serializers import OtpSerializer, PasswordResetOtpSerializer, LoginSerializer, UserSerializer
+from accounts.serializers import OtpSerializer, PasswordResetOtpSerializer, LoginSerializer, UserSerializer, \
+    RegisterSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -16,6 +18,7 @@ from django.utils.decorators import method_decorator
 from accounts.models import Otp
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView
+from rest_auth.registration.views import RegisterView
 
 User = get_user_model()
 
@@ -24,6 +27,40 @@ sensitive_post_parameters_m = method_decorator(
         'password', 'old_password', 'new_password1', 'new_password2'
     )
 )
+
+
+class RegisterAPIView(RegisterView):
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        try:
+            if serializer.is_valid():
+                user = serializer.save(request)
+                headers = self.get_success_headers(serializer.data)
+                token, flag = Token.objects.get_or_create(user=user)
+                custom_data = {
+                    "error": False,
+                    "status_code": status.HTTP_200_OK,
+                    "message": "Registered Successfully",
+                    "data": serializer.data,
+                    "token": str(token)
+                }
+                return Response(custom_data, status=status.HTTP_201_CREATED)
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            error_data = {
+                "error": True,
+                "message": str(e),
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
 
 
 class SendOtpApiView(APIView):
