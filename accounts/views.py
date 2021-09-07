@@ -5,17 +5,17 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model, login
 from accounts.serializers import OtpSerializer, PasswordResetOtpSerializer, LoginSerializer, UserSerializer, \
-    RegisterSerializer
+    RegisterSerializer, UserProfileSerializer, CustomUserSerializer, UserDetailsSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, permissions, authentication
 import random
 from django.core.mail import send_mail
 from go_fit.settings import DEFAULT_FROM_EMAIL, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
 from twilio.rest import Client
 from django.views.decorators.debug import sensitive_post_parameters
 from django.utils.decorators import method_decorator
-from accounts.models import Otp
+from accounts.models import Otp, UserProfile
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView
 from rest_auth.registration.views import RegisterView
@@ -32,17 +32,18 @@ sensitive_post_parameters_m = method_decorator(
 class RegisterAPIView(RegisterView):
     
     def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = RegisterSerializer(data=request.data)
         try:
             if serializer.is_valid():
-                user = serializer.save(request)
+                user = serializer.save(self.request)
                 headers = self.get_success_headers(serializer.data)
+                user_serializer = CustomUserSerializer(user)
                 token, flag = Token.objects.get_or_create(user=user)
                 custom_data = {
                     "error": False,
                     "status_code": status.HTTP_200_OK,
                     "message": "Registered Successfully",
-                    "data": serializer.data,
+                    "data": user_serializer.data,
                     "token": str(token)
                 }
                 return Response(custom_data, status=status.HTTP_201_CREATED)
@@ -68,7 +69,6 @@ class SendOtpApiView(APIView):
 
     def post(self, request):
         email = request.data.get('email', '')
-        mobile = request.data.get('mobile', '')
 
         if email != '':
             user = User.objects.get(email=email)
@@ -76,7 +76,7 @@ class SendOtpApiView(APIView):
             serializer = OtpSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save(otp=otp)
-            subject = 'LocalMingle Forgot Password Otp'
+            subject = 'GoMove Forgot Password Otp'
             message = f"Hello {user.first_name} {user.last_name} \n Your Forgot Password Otp is {otp}"
             try:
                 send_mail(subject=subject, message=message, from_email=DEFAULT_FROM_EMAIL, recipient_list=[email],
@@ -84,30 +84,30 @@ class SendOtpApiView(APIView):
             except:
                 return Response({'message': 'Email not send'}, status=status.HTTP_400_BAD_REQUEST)
             return Response({'message': 'An otp has been sent to your email'}, status=status.HTTP_200_OK)
-        elif mobile != '':
-            user = User.objects.get(email=mobile)
-            otp = random.randint(1000, 9999)
-            serializer = OtpSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(otp=otp)
-            title = 'LocalMingle Forgot Password Otp'
-            body = f"Hello {user.first_name} {user.last_name} \n Your Forgot Password Otp is {otp}"
-
-            # Find your Account SID and Auth Token at twilio.com/console
-            # and set the environment variables. See http://twil.io/secure
-            account_sid = TWILIO_ACCOUNT_SID
-            auth_token = TWILIO_AUTH_TOKEN
-            client = Client(account_sid, auth_token)
-            try:
-                message = client.messages.create(body=body,
-                                                 from_='+13237451893',
-                                                 to='+91' + mobile)
-                print(message.sid)
-            except:
-                return Response({'message': 'Sms not send'}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({'message': 'An otp has been sent to your mobile'}, status=status.HTTP_200_OK)
+        # elif mobile != '':
+        #     user = User.objects.get(email=mobile)
+        #     otp = random.randint(1000, 9999)
+        #     serializer = OtpSerializer(data=request.data)
+        #     serializer.is_valid(raise_exception=True)
+        #     serializer.save(otp=otp)
+        #     title = 'LocalMingle Forgot Password Otp'
+        #     body = f"Hello {user.first_name} {user.last_name} \n Your Forgot Password Otp is {otp}"
+        #
+        #     # Find your Account SID and Auth Token at twilio.com/console
+        #     # and set the environment variables. See http://twil.io/secure
+        #     account_sid = TWILIO_ACCOUNT_SID
+        #     auth_token = TWILIO_AUTH_TOKEN
+        #     client = Client(account_sid, auth_token)
+        #     try:
+        #         message = client.messages.create(body=body,
+        #                                          from_='+13237451893',
+        #                                          to='+91' + mobile)
+        #         print(message.sid)
+        #     except:
+        #         return Response({'message': 'Sms not send'}, status=status.HTTP_400_BAD_REQUEST)
+        #     return Response({'message': 'An otp has been sent to your mobile'}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'Email or Mobile can not be blank.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Email can not be blank.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class VerifyOtpApiView(APIView):
@@ -115,7 +115,7 @@ class VerifyOtpApiView(APIView):
 
     def post(self, request):
         email = request.data.get('email', '')
-        mobile = request.data.get('mobile', '')
+        # mobile = request.data.get('mobile', '')
         if email != '':
             otp_obj = Otp.objects.get(email=request.data['email'], verify=False)
             if otp_obj:
@@ -130,23 +130,22 @@ class VerifyOtpApiView(APIView):
             else:
                 return Response({'message': 'Please enter valid email to verify otp',
                                  'status': status.HTTP_400_BAD_REQUEST})
-        elif mobile != '':
-            otp_obj = Otp.objects.get(email=request.data['mobile'], verify=False)
-            if otp_obj:
-                if int(request.data['otp']) == otp_obj.otp:
-                    serializer = OtpSerializer(data=request.data)
-                    serializer.is_valid(raise_exception=True)
-                    otp_obj.verify = True
-                    otp_obj.save()
-                    return Response({'message': 'Your otp is verified successfully', 'status': status.HTTP_200_OK})
-                else:
-                    return Response({'message': 'You have entered wrong otp.', 'status': status.HTTP_400_BAD_REQUEST})
-            else:
-                return Response({'message': 'Please enter valid mobile number to verify otp',
-                                 'status': status.HTTP_400_BAD_REQUEST})
-
+        # elif mobile != '':
+        #     otp_obj = Otp.objects.get(email=request.data['mobile'], verify=False)
+        #     if otp_obj:
+        #         if int(request.data['otp']) == otp_obj.otp:
+        #             serializer = OtpSerializer(data=request.data)
+        #             serializer.is_valid(raise_exception=True)
+        #             otp_obj.verify = True
+        #             otp_obj.save()
+        #             return Response({'message': 'Your otp is verified successfully', 'status': status.HTTP_200_OK})
+        #         else:
+        #             return Response({'message': 'You have entered wrong otp.', 'status': status.HTTP_400_BAD_REQUEST})
+        #     else:
+        #         return Response({'message': 'Please enter valid mobile number to verify otp',
+        #                          'status': status.HTTP_400_BAD_REQUEST})
         else:
-            return Response({'message': 'Email or Mobile can not be blank.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Email can not be blank.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordResetOtpView(GenericAPIView):
@@ -198,3 +197,41 @@ class LoginAPI(KnoxLoginView):
                 "message": e,
                 "data": {}
             })
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [authentication.TokenAuthentication]
+    serializer_class = UserDetailsSerializer
+
+    def get(self, request, format=None):
+        user_data = User.objects.get(id=self.request.user.id)
+        serializer = UserDetailsSerializer(user_data)
+        custom_data = {
+            "error": False,
+            "status_code": status.HTTP_200_OK,
+            "message": "Profile Details",
+            "data": serializer.data
+        }
+        return Response(custom_data)
+
+    def put(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            instance = User.objects.get(pk=self.request.user.id)
+            serializer = UserDetailsSerializer(instance, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                custom_data = {
+                    "error": False,
+                    "status_code": status.HTTP_200_OK,
+                    "message": "Profile Details Updated",
+                    "data": serializer.data
+                }
+                return Response(custom_data)
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
