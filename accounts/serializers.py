@@ -27,7 +27,7 @@ class RegisterSerializer(DefaultRegisterSerializer):
     weight = serializers.CharField(max_length=50, required=False)
     date_of_birth = serializers.DateField(required=True)
     gender = serializers.ChoiceField(choices=GENDER_TYPE, required=True)
-    profile_pic = serializers.ImageField(required=False)
+    profile_pic = serializers.FileField(required=False, allow_null=True)
 
     def custom_signup(self, request, user):
         mobile = self.validated_data.get('mobile', '')
@@ -74,7 +74,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ('mobile', 'profile_pic')
+        fields = ('mobile', 'height', 'weight', 'nick_name', 'date_of_birth', 'gender', 'profile_pic')
 
 
 class UserDetailsSerializer(serializers.ModelSerializer):
@@ -95,6 +95,11 @@ class UserDetailsSerializer(serializers.ModelSerializer):
             profile_obj = UserProfile.objects.get(user__id=instance.pk)
             profile_obj.profile_pic = profile.get('profile_pic', profile_obj.profile_pic)
             profile_obj.mobile = profile.get('mobile', profile_obj.mobile)
+            profile_obj.nick_name = profile.get('nick_name', profile_obj.nick_name)
+            profile_obj.height = profile.get('height', profile_obj.height)
+            profile_obj.weight = profile.get('weight', profile_obj.weight)
+            profile_obj.date_of_birth = profile.get('date_of_birth', profile_obj.date_of_birth)
+            profile_obj.gender = profile.get('gender', profile_obj.gender)
 
             profile_obj.save()
         return instance
@@ -160,3 +165,11 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'email',
                   'first_name', 'last_name')
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer(read_only=True)
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email',
+                  'first_name', 'last_name', 'profile')
