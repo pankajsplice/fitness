@@ -109,15 +109,24 @@ CKEDITOR_CONFIGS = {
 }
 
 
-EMAIL_HOST = 'in-v3.mailjet.com'
-EMAIL_PORT = '587'
-EMAIL_HOST_USER = 'bd83e39a4e19891beae6420600ccf6cc'
-EMAIL_HOST_PASSWORD = 'c1de3dc0846236370c9f51de0d935fb7'
-EMAIL_USE_TLS = True
-
-DEFAULT_FROM_EMAIL = 'support@spliceglobal.com'
-MM_AMDIN_EMAIL = 'support@spliceglobal.com'
+# EMAIL_HOST = 'in-v3.mailjet.com'
+# EMAIL_PORT = '587'
+# EMAIL_HOST_USER = 'bd83e39a4e19891beae6420600ccf6cc'
+# EMAIL_HOST_PASSWORD = 'c1de3dc0846236370c9f51de0d935fb7'
+# EMAIL_USE_TLS = True
+# DEFAULT_FROM_EMAIL = 'support@spliceglobal.com'
+# MM_AMDIN_EMAIL = 'support@spliceglobal.com'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_FROM = 'noreply@letsemail.co'
+DEFAULT_FROM_EMAIL = EMAIL_FROM
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'AKIAVWS4NR6PXV4VWVEJ'
+EMAIL_HOST_PASSWORD = 'BI+Wc85+oj3eodj9CaAl9y5rz/VJH99vcR3k5hf8aneB'
+EMAIL_HOST = 'email-smtp.ap-south-1.amazonaws.com'
+EMAIL_PORT = 587
+EMAIL_ADMIN = 'noreply@letsemail.co'
+SENDER_NAME = 'GoMove Support Team'
 
 
 TWILIO_ACCOUNT_SID = 'ACbfe0cd41ed4784bd87a52c2bc82afeaa'
