@@ -82,8 +82,20 @@ class SendOtpApiView(APIView):
                 send_mail(subject=subject, message=message, from_email=DEFAULT_FROM_EMAIL, recipient_list=[email],
                           fail_silently=True)
             except:
-                return Response({'message': 'Email not send'}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({'message': 'An otp has been sent to your email'}, status=status.HTTP_200_OK)
+                error_data = {
+                    "error": True,
+                    "message": 'Email not send.',
+                    "status_code": status.HTTP_400_BAD_REQUEST,
+                    "data": {}
+                }
+                return Response(error_data)
+            custom_data = {
+                "error": False,
+                "status_code": status.HTTP_200_OK,
+                "message": "An otp has been sent to your email.",
+                "data": {}
+            }
+            return Response(custom_data)
         # elif mobile != '':
         #     user = User.objects.get(email=mobile)
         #     otp = random.randint(1000, 9999)
@@ -107,7 +119,13 @@ class SendOtpApiView(APIView):
         #         return Response({'message': 'Sms not send'}, status=status.HTTP_400_BAD_REQUEST)
         #     return Response({'message': 'An otp has been sent to your mobile'}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'Email can not be blank.'}, status=status.HTTP_400_BAD_REQUEST)
+            error_data = {
+                "error": True,
+                "message": 'Email can not be blank.',
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
 
 
 class VerifyOtpApiView(APIView):
@@ -124,12 +142,29 @@ class VerifyOtpApiView(APIView):
                     serializer.is_valid(raise_exception=True)
                     otp_obj.verify = True
                     otp_obj.save()
-                    return Response({'message': 'Your otp is verified successfully', 'status': status.HTTP_200_OK})
+                    custom_data = {
+                        "error": False,
+                        "status_code": status.HTTP_200_OK,
+                        "message": "Your otp is verified successfully.",
+                        "data": {}
+                    }
+                    return Response(custom_data)
                 else:
-                    return Response({'message': 'You have entered wrong otp.', 'status': status.HTTP_400_BAD_REQUEST})
+                    error_data = {
+                        "error": True,
+                        "message": 'You have entered wrong otp.',
+                        "status_code": status.HTTP_400_BAD_REQUEST,
+                        "data": {}
+                    }
+                    return Response(error_data)
             else:
-                return Response({'message': 'Please enter valid email to verify otp',
-                                 'status': status.HTTP_400_BAD_REQUEST})
+                error_data = {
+                    "error": True,
+                    "message": 'Please enter valid email to verify otp.',
+                    "status_code": status.HTTP_400_BAD_REQUEST,
+                    "data": {}
+                }
+                return Response(error_data)
         # elif mobile != '':
         #     otp_obj = Otp.objects.get(email=request.data['mobile'], verify=False)
         #     if otp_obj:
@@ -145,7 +180,13 @@ class VerifyOtpApiView(APIView):
         #         return Response({'message': 'Please enter valid mobile number to verify otp',
         #                          'status': status.HTTP_400_BAD_REQUEST})
         else:
-            return Response({'message': 'Email can not be blank.'}, status=status.HTTP_400_BAD_REQUEST)
+            error_data = {
+                "error": True,
+                "message": 'Email can not be blank.',
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
 
 
 class PasswordResetOtpView(GenericAPIView):
@@ -167,9 +208,13 @@ class PasswordResetOtpView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(
-            {"detail": "Password has been reset with the new password."}
-        )
+        custom_data = {
+            "error": False,
+            "status_code": status.HTTP_200_OK,
+            "message": "Password has been reset with the new password.",
+            "data": {}
+        }
+        return Response(custom_data)
 
 
 class LoginAPI(KnoxLoginView):

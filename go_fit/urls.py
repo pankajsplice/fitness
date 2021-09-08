@@ -20,7 +20,8 @@ from django.conf.urls.static import static
 from utils.routers import DefaultRouter
 from django.views.generic import TemplateView
 from django.conf.urls import url
-from accounts.views import LoginAPI, RegisterAPIView, UserProfileView
+from accounts.views import LoginAPI, RegisterAPIView, UserProfileView, SendOtpApiView, PasswordResetOtpView, \
+    VerifyOtpApiView
 
 router = DefaultRouter()
 
@@ -37,6 +38,9 @@ urlpatterns = [
     path('login/', TemplateView.as_view(template_name="account/user-login.html")),
     path('api/login/', LoginAPI.as_view()),
     path('api/user-profile/', UserProfileView.as_view()),
+    path('api/send-otp/', SendOtpApiView.as_view()),
+    path('api/verify-otp/', VerifyOtpApiView.as_view()),
+    path('api/password-reset/', PasswordResetOtpView.as_view()),
     path('register/', TemplateView.as_view(template_name="account/user-register.html")),
     path('forgot-password/', TemplateView.as_view(template_name="account/forgot-password.html")),
     path('profile/', TemplateView.as_view(template_name="account/user-profile.html")),
