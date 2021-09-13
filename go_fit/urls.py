@@ -21,7 +21,7 @@ from utils.routers import DefaultRouter
 from django.views.generic import TemplateView
 from django.conf.urls import url
 from accounts.views import LoginAPI, RegisterAPIView, UserProfileView, SendOtpApiView, PasswordResetOtpView, \
-    VerifyOtpApiView
+    VerifyOtpApiView, ChangePasswordAPIView
 
 router = DefaultRouter()
 
@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/gofit/', include('gofit_app.urls')),
     path('api/registrations/', include('rest_auth.registration.urls')),
     path('api/register/', RegisterAPIView.as_view(), name='register'),
+    path('api/password-change/', ChangePasswordAPIView.as_view(), name='password-change'),
     path('', TemplateView.as_view(template_name="index.html")),
     path('login/', TemplateView.as_view(template_name="account/user-login.html")),
     path('api/login/', LoginAPI.as_view()),
