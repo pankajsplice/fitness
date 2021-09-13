@@ -18,6 +18,7 @@ from django.utils.decorators import method_decorator
 from accounts.models import Otp, UserProfile
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView
+from rest_auth.views import PasswordChangeView
 from rest_auth.registration.views import RegisterView
 
 User = get_user_model()
@@ -45,6 +46,37 @@ class RegisterAPIView(RegisterView):
                     "message": "Registered Successfully",
                     "data": user_serializer.data,
                     "token": str(token)
+                }
+                return Response(custom_data, status=status.HTTP_201_CREATED)
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            error_data = {
+                "error": True,
+                "message": str(e),
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+
+
+class ChangePasswordAPIView(PasswordChangeView):
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                custom_data = {
+                    "error": False,
+                    "status_code": status.HTTP_200_OK,
+                    "message": "New password has been saved.",
+                    "data": serializer.data
                 }
                 return Response(custom_data, status=status.HTTP_201_CREATED)
             error_data = {
