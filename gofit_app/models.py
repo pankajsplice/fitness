@@ -31,3 +31,8 @@ class SleepInfo(ModelMixin):
 class WoHeartInfo(ModelMixin):
     wo_heart_data = models.TextField(null=True, blank=True)
     wo_heart_date = models.DateField(null=True, blank=True)
+
+
+class Feedback(ModelMixin):
+    message = models.TextField(null=True)
+    email = models.EmailField(null=True, blank=True)
