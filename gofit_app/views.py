@@ -12,8 +12,9 @@ from rest_framework.views import APIView
 from datetime import datetime,timedelta
 from django.db.models import Avg, Min, Max, Sum
 from accounts.models import UserProfile
-from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo
-from .serializers import HeartInfoSerializer, MotionInfoSerializer, SleepInfoSerializer, WoHeartInfoSerializer
+from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo, Feedback
+from .serializers import HeartInfoSerializer, MotionInfoSerializer, SleepInfoSerializer, WoHeartInfoSerializer, \
+    FeedbackSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 
 
@@ -214,6 +215,49 @@ class WoHeartInfoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(e)
             return Response({"success": False})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class FeedbackViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        try:
+            if serializer.is_valid():
+                if self.request.user.is_authenticated:
+                    self.perform_create(serializer)
+                    d = serializer.save()
+                    headers = self.get_success_headers(serializer.data)
+                    custom_data = {
+                        "error": False,
+                        "message": 'created successfully',
+                        "status_code": status.HTTP_201_CREATED,
+                        "data": serializer.data
+                    }
+                    return Response(custom_data)
+                return Response({"message": "Login Required."})
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            error_data = {
+                "error": True,
+                "message": str(e),
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
 
 
 @permission_classes((AllowAny,))
