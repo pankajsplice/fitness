@@ -177,7 +177,7 @@ class VerifyOtpApiView(APIView):
         # mobile = request.data.get('mobile', '')
         if email != '':
             try:
-                otp_obj = Otp.objects.get(email=request.data['email'], verify=False)
+                otp_obj = Otp.objects.filter(email=request.data['email'], verify=False).last()
                 if otp_obj:
                     if int(request.data['otp']) == otp_obj.otp:
                         serializer = OtpSerializer(data=request.data)
