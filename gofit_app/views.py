@@ -5,29 +5,27 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 from django.db.models import Avg, Min, Max, Sum
 from accounts.models import UserProfile
 from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo, Feedback
 from .serializers import HeartInfoSerializer, MotionInfoSerializer, SleepInfoSerializer, WoHeartInfoSerializer, \
     FeedbackSerializer
-from django_filters.rest_framework import DjangoFilterBackend
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class HeartInfoViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated, )
-    authentication_classes = (TokenAuthentication, )
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     queryset = HeartInfo.objects.all()
     serializer_class = HeartInfoSerializer
-
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
-
+    
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         try:
@@ -72,20 +70,21 @@ class HeartInfoViewSet(viewsets.ModelViewSet):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class MotionInfoViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated, )
-    authentication_classes = (TokenAuthentication, )
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     queryset = MotionInfo.objects.all()
     serializer_class = MotionInfoSerializer
-
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
-
+    
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         try:
             if serializer.is_valid():
                 if self.request.user.is_authenticated:
-                    motion_data = MotionInfo.objects.filter(motion_date=serializer.validated_data.get('motion_date')).first()
+                    motion_data = MotionInfo.objects.filter(
+                        motion_date=serializer.validated_data.get('motion_date')).first()
                     if motion_data:
                         motion_data.motion_calorie = serializer.validated_data.get('motion_calorie')
                         motion_data.motion_data = serializer.validated_data.get('motion_data')
@@ -129,16 +128,17 @@ class SleepInfoViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication,)
     queryset = SleepInfo.objects.all()
     serializer_class = SleepInfoSerializer
-
+    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
-
+    
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         try:
             if serializer.is_valid():
                 if self.request.user.is_authenticated:
-                    sleep_data = SleepInfo.objects.filter(sleep_date=serializer.validated_data.get('sleep_date')).first()
+                    sleep_data = SleepInfo.objects.filter(
+                        sleep_date=serializer.validated_data.get('sleep_date')).first()
                     if sleep_data:
                         sleep_data.sleep_data = serializer.validated_data.get('sleep_data')
                         sleep_data.sleep_deep_time = serializer.validated_data.get('sleep_deep_time')
@@ -188,7 +188,7 @@ class WoHeartInfoViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
-
+    
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         try:
@@ -226,7 +226,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
-
+    
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         try:
@@ -260,20 +260,39 @@ class FeedbackViewSet(viewsets.ModelViewSet):
             return Response(error_data)
 
 
-@permission_classes((AllowAny,))
-@method_decorator(csrf_exempt, name='dispatch')
 class GetAverageMotionData(APIView):
-
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
     def get(self, request, *args, **kwargs):
-        motion_calorie_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_calorie').aggregate(Avg('motion_calorie'))
-        motion_calorie_min = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_calorie').aggregate(Min('motion_calorie'))
-        motion_calorie_max = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_calorie').aggregate(Max('motion_calorie'))
-        motion_distance_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_distance').aggregate(Avg('motion_distance'))
-        motion_distance_min = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_distance').aggregate(Min('motion_distance'))
-        motion_distance_max = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_distance').aggregate(Max('motion_distance'))
-        motion_step_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_step').aggregate(Avg('motion_step'))
-        motion_step_min = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_step').aggregate(Min('motion_step'))
-        motion_step_max = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_step').aggregate(Max('motion_step'))
+        motion_calorie_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                       created_by=self.request.user).values('motion_calorie').aggregate(
+            Avg(
+                'motion_calorie'))
+        motion_calorie_min = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                       created_by=self.request.user).values(
+            'motion_calorie').aggregate(Min('motion_calorie'))
+        motion_calorie_max = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                       created_by=self.request.user).values(
+            'motion_calorie').aggregate(Max('motion_calorie'))
+        motion_distance_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                        created_by=self.request.user).values(
+            'motion_distance').aggregate(Avg('motion_distance'))
+        motion_distance_min = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                        created_by=self.request.user).values(
+            'motion_distance').aggregate(Min('motion_distance'))
+        motion_distance_max = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                        created_by=self.request.user).values(
+            'motion_distance').aggregate(Max('motion_distance'))
+        motion_step_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                    created_by=self.request.user).values(
+            'motion_step').aggregate(Avg('motion_step'))
+        motion_step_min = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                    created_by=self.request.user).values(
+            'motion_step').aggregate(Min('motion_step'))
+        motion_step_max = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                    created_by=self.request.user).values(
+            'motion_step').aggregate(Max('motion_step'))
         return Response({"motion_calorie_avg": motion_calorie_avg.get('motion_calorie__avg'),
                          "motion_calorie_min": motion_calorie_min.get('motion_calorie__min'),
                          "motion_calorie_max": motion_calorie_max.get('motion_calorie__max'),
@@ -285,20 +304,38 @@ class GetAverageMotionData(APIView):
                          "motion_step_max": motion_step_max.get('motion_step__max'), })
 
 
-@permission_classes((AllowAny,))
-@method_decorator(csrf_exempt, name='dispatch')
 class GetAverageSleepData(APIView):
-
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    
     def get(self, request, *args, **kwargs):
-        sleep_data_avg = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('sleep_data').aggregate(Avg('sleep_data'))
-        sleep_data_min = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('sleep_data').aggregate(Min('sleep_data'))
-        sleep_data_max = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('sleep_data').aggregate(Max('sleep_data'))
-        sleep_total_time_avg = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('total_time').aggregate(Avg('total_time'))
-        sleep_total_time_min = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('total_time').aggregate(Min('total_time'))
-        sleep_total_time_max = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('total_time').aggregate(Max('total_time'))
-        sleep_waking_number_avg = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('sleep_waking_number').aggregate(Avg('sleep_waking_number'))
-        sleep_waking_number_min = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('sleep_waking_number').aggregate(Min('sleep_waking_number'))
-        sleep_waking_number_max = SleepInfo.objects.filter(sleep_date__gte=datetime.now()-timedelta(days=7)).values('sleep_waking_number').aggregate(Max('sleep_waking_number'))
+        sleep_data_avg = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                  created_by=self.request.user).values(
+            'sleep_data').aggregate(Avg('sleep_data'))
+        sleep_data_min = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                  created_by=self.request.user).values(
+            'sleep_data').aggregate(Min('sleep_data'))
+        sleep_data_max = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                  created_by=self.request.user).values(
+            'sleep_data').aggregate(Max('sleep_data'))
+        sleep_total_time_avg = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                        created_by=self.request.user).values(
+            'total_time').aggregate(Avg('total_time'))
+        sleep_total_time_min = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                        created_by=self.request.user).values(
+            'total_time').aggregate(Min('total_time'))
+        sleep_total_time_max = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                        created_by=self.request.user).values(
+            'total_time').aggregate(Max('total_time'))
+        sleep_waking_number_avg = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                           created_by=self.request.user).values(
+            'sleep_waking_number').aggregate(Avg('sleep_waking_number'))
+        sleep_waking_number_min = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                           created_by=self.request.user).values(
+            'sleep_waking_number').aggregate(Min('sleep_waking_number'))
+        sleep_waking_number_max = SleepInfo.objects.filter(sleep_date__gte=datetime.now() - timedelta(days=7),
+                                                           created_by=self.request.user).values(
+            'sleep_waking_number').aggregate(Max('sleep_waking_number'))
         return Response({"sleep_data_avg": sleep_data_avg.get('sleep_data__avg'),
                          "sleep_data_min": sleep_data_min.get('sleep_data__min'),
                          "sleep_data_max": sleep_data_max.get('sleep_data__max'),
@@ -312,25 +349,24 @@ class GetAverageSleepData(APIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StepByDateViewSet(APIView):
-
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
     
     def get(self, *args, **kwargs):
         date = self.request.GET.get("date")
         data = {}
-        queryset = MotionInfo.objects.filter(motion_date=date)
+        queryset = MotionInfo.objects.filter(motion_date=date, created_by=self.request.user)
         if date and queryset:
             # min = MotionInfo.objects.filter(motion_date=date).values('motion_step').aggregate(Sum('motion_step'))
-            steps = MotionInfo.objects.filter(motion_date=date).first()
+            steps = MotionInfo.objects.filter(motion_date=date, created_by=self.request.user).first()
             data["total_steps"] = int(steps.motion_step)
-            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
-        return Response({"error":True, "message":"No Data Found", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+            return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
+        return Response(
+            {"error": True, "message": "No Data Found", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StepByDateRangeViewSet(APIView):
-
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
     
@@ -341,7 +377,8 @@ class StepByDateRangeViewSet(APIView):
         data = {}
         week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         if from_date and to_date:
-            queryset = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date)
+            queryset = MotionInfo.objects.filter(motion_date__gte=from_date, motion_date__lte=to_date,
+                                                 created_by=self.request.user)
             min_steps = queryset.values('motion_step').aggregate(Min('motion_step'))
             max_steps = queryset.values('motion_step').aggregate(Max('motion_step'))
             avg_steps = queryset.values('motion_step').aggregate(Avg('motion_step'))
@@ -354,8 +391,8 @@ class StepByDateRangeViewSet(APIView):
             for day in queryset:
                 day_dict[str(day.motion_date.strftime("%A"))] = int(day.motion_step)
             data["weekly"] = day_dict
-            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
-        return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+            return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
+        return Response({"error": True, "message": "Failed", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -374,9 +411,12 @@ class SetSleepGoalView(APIView):
                 data['username'] = profile_data.user.username
                 data['email'] = profile_data.user.email
                 data['sleep_goal'] = profile_data.sleep_goal
-                return Response({"error": False, "message": "Sleep Goal Saved", "status_code": status.HTTP_200_OK, "data": data})
+                return Response(
+                    {"error": False, "message": "Sleep Goal Saved", "status_code": status.HTTP_200_OK, "data": data})
             else:
-                return Response({"error": True, "message": "Please Enter Sleep Goal", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+                return Response(
+                    {"error": True, "message": "Please Enter Sleep Goal", "status_code": status.HTTP_400_BAD_REQUEST,
+                     "data": {}})
         except Exception as e:
             print(e)
             return Response(
@@ -399,9 +439,12 @@ class SetStepGoalView(APIView):
                 data['username'] = profile_data.user.username
                 data['email'] = profile_data.user.email
                 data['step_goal'] = profile_data.step_goal
-                return Response({"error": False, "message": "Step Goal Saved", "status_code": status.HTTP_200_OK, "data": data})
+                return Response(
+                    {"error": False, "message": "Step Goal Saved", "status_code": status.HTTP_200_OK, "data": data})
             else:
-                return Response({"error": True, "message": "Please Enter Step Goal", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
+                return Response(
+                    {"error": True, "message": "Please Enter Step Goal", "status_code": status.HTTP_400_BAD_REQUEST,
+                     "data": {}})
         except Exception as e:
             print(e)
             return Response(
@@ -416,15 +459,14 @@ class SleepDataByDateAPI(APIView):
     def get(self, *args, **kwargs):
         date = self.request.GET.get("date")
         data = {}
-        queryset = SleepInfo.objects.filter(sleep_date=date)
+        queryset = SleepInfo.objects.filter(sleep_date=date, created_by=self.request.user)
         if date and queryset:
-            sleep_time = SleepInfo.objects.filter(sleep_date=date).latest('id')
+            sleep_time = SleepInfo.objects.filter(sleep_date=date, created_by=self.request.user).latest('id')
             x = time.strptime(str(sleep_time.sleep_total_time), '%H:%M:%S')
             y = time.strptime(str(self.request.user.profile.sleep_goal), '%H:%M:%S')
             total_sleep_time_seconds = dt.timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds()
             sleep_goal_seconds = dt.timedelta(hours=y.tm_hour, minutes=y.tm_min, seconds=y.tm_sec).total_seconds()
-            sleep_time_percentage = int(total_sleep_time_seconds*100/sleep_goal_seconds)
-            print(int(sleep_time_percentage))
+            sleep_time_percentage = int(total_sleep_time_seconds * 100 / sleep_goal_seconds)
             
             data["sleep_data"] = sleep_time.sleep_data
             data["sleep_date"] = sleep_time.sleep_date
@@ -434,7 +476,7 @@ class SleepDataByDateAPI(APIView):
             data["sleep_total_time"] = sleep_time.sleep_total_time
             data["sleep_waking_number"] = sleep_time.sleep_waking_number
             data["total_time"] = sleep_time.total_time
-            data["sleep_time_percentage"] = str(int(sleep_time_percentage))+"%"
+            data["sleep_time_percentage"] = str(int(sleep_time_percentage)) + "%"
             return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
         return Response(
             {"error": True, "message": "No Data Found", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
@@ -442,7 +484,6 @@ class SleepDataByDateAPI(APIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SleepDataByDateRangeAPI(APIView):
-
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
     
@@ -453,24 +494,23 @@ class SleepDataByDateRangeAPI(APIView):
         data = {}
         week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         if from_date and to_date:
-            queryset = SleepInfo.objects.filter(sleep_date__gte=from_date, sleep_date__lte=to_date)
+            queryset = SleepInfo.objects.filter(sleep_date__gte=from_date, sleep_date__lte=to_date,
+                                                created_by=self.request.user)
             for day_name in week_list:
                 if day_dict.get(day_name) == None:
                     day_dict[day_name] = "00:00:00"
             for day in queryset:
                 day_dict[str(day.sleep_date.strftime("%A"))] = day.sleep_total_time
             data["weekly"] = day_dict
-            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
-        return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
+            return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
+        return Response({"error": True, "message": "Failed", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
 
-
-# ----------------------------
 
 @method_decorator(csrf_exempt, name='dispatch')
 class BloodPressureDateRangeViewSet(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
-
+    
     def get(self, *args, **kwargs):
         from_date = self.request.GET.get("from_date")
         to_date = self.request.GET.get("to_date")
@@ -478,7 +518,8 @@ class BloodPressureDateRangeViewSet(APIView):
         data = {}
         week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         if from_date and to_date:
-            queryset = HeartInfo.objects.filter(date_created__date__gte=from_date, date_created__date__lte=to_date)
+            queryset = HeartInfo.objects.filter(date_created__date__gte=from_date, date_created__date__lte=to_date,
+                                                created_by=self.request.user)
             avg_heart_info_sbp = queryset.values('heart_info_sbp').aggregate(Avg('heart_info_sbp'))
             avg_heart_info_dbp = queryset.values('heart_info_dbp').aggregate(Avg('heart_info_dbp'))
             avg_heart_info_hr = queryset.values('heart_info_hr').aggregate(Avg('heart_info_hr'))
@@ -495,125 +536,115 @@ class BloodPressureDateRangeViewSet(APIView):
         return Response({"error": True, "message": "Failed", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
 
 
-
-
-@permission_classes((IsAuthenticated,))
 @method_decorator(csrf_exempt, name='dispatch')
 class GetMotionData(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     
     def get(self, request, *args, **kwargs):
         day_dict = {}
         data = {}
         week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        date_now = timezone.now().date()-timedelta(days=7)
-        queryset = MotionInfo.objects.filter(motion_date__gte=date_now)
-        date_after=date_now-timedelta(days=7)        
-        queryset1 = MotionInfo.objects.filter(motion_date__gte=str(date_after), motion_date__lte=str(date_now))
-        motion_calorie_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now()-timedelta(days=7)).values('motion_calorie').aggregate(Avg('motion_calorie'))
+        date_now = timezone.now().date() - timedelta(days=7)
+        queryset = MotionInfo.objects.filter(motion_date__gte=date_now, created_by=self.request.user)
+        date_after = date_now - timedelta(days=7)
+        queryset1 = MotionInfo.objects.filter(motion_date__gte=str(date_after), motion_date__lte=str(date_now),
+                                              created_by=self.request.user)
+        motion_calorie_avg = MotionInfo.objects.filter(motion_date__gte=timezone.now() - timedelta(days=7),
+                                                       created_by=self.request.user).values(
+            'motion_calorie').aggregate(Avg('motion_calorie'))
         motion_calorie_sum = queryset.values('motion_calorie')
-        motion_len=len(motion_calorie_sum)
-        sum_mo_7=0
-        for i in range(0,motion_len):
-            b=motion_calorie_sum[i].get('motion_calorie')
-            sum_mo_7=sum_mo_7+b
+        motion_len = len(motion_calorie_sum)
+        sum_mo_7 = 0
+        for i in range(0, motion_len):
+            b = motion_calorie_sum[i].get('motion_calorie')
+            sum_mo_7 = sum_mo_7 + b
         
         motion_calorie_sum1 = queryset1.values('motion_calorie')
-        motion_len1=len(motion_calorie_sum1)
-        sum_mo1_after=0
-        for i in range(0,motion_len1):
-            b=motion_calorie_sum1[i].get('motion_calorie')
-            sum_mo1_after=sum_mo1_after+b
+        motion_len1 = len(motion_calorie_sum1)
+        sum_mo1_after = 0
+        for i in range(0, motion_len1):
+            b = motion_calorie_sum1[i].get('motion_calorie')
+            sum_mo1_after = sum_mo1_after + b
         
-        
-
         motion_distance_sum = queryset.values('motion_distance')
-        motion_len=len(motion_distance_sum)
-        sum_mo_dist_7=0
-        for i in range(0,motion_len):
-            b=motion_distance_sum[i].get('motion_distance')
-            sum_mo_dist_7=sum_mo_dist_7+b
+        motion_len = len(motion_distance_sum)
+        sum_mo_dist_7 = 0
+        for i in range(0, motion_len):
+            b = motion_distance_sum[i].get('motion_distance')
+            sum_mo_dist_7 = sum_mo_dist_7 + b
         
         motion_distance_sum1 = queryset1.values('motion_distance')
-        motion_len1=len(motion_distance_sum1)
-        sum_mo1_dist_after=0
-        for i in range(0,motion_len1):
-            b=motion_distance_sum1[i].get('motion_distance')
-            sum_mo1_dist_after=sum_mo1_dist_after+b
-
+        motion_len1 = len(motion_distance_sum1)
+        sum_mo1_dist_after = 0
+        for i in range(0, motion_len1):
+            b = motion_distance_sum1[i].get('motion_distance')
+            sum_mo1_dist_after = sum_mo1_dist_after + b
+        
         motion_step_sum = queryset.values('motion_step')
-        motion_len=len(motion_step_sum)
-        sum_mo_step_7=0
-        for i in range(0,motion_len):
-            b=motion_step_sum[i].get('motion_step')
-            sum_mo_step_7=sum_mo_step_7+b
+        motion_len = len(motion_step_sum)
+        sum_mo_step_7 = 0
+        for i in range(0, motion_len):
+            b = motion_step_sum[i].get('motion_step')
+            sum_mo_step_7 = sum_mo_step_7 + b
         motion_step_sum1 = queryset1.values('motion_step')
-        motion_len1=len(motion_step_sum1)
-        sum_mo1_step_after=0
-        for i in range(0,motion_len1):
-            b=motion_step_sum1[i].get('motion_step')
-            sum_mo1_step_after=sum_mo1_step_after+b
+        motion_len1 = len(motion_step_sum1)
+        sum_mo1_step_after = 0
+        for i in range(0, motion_len1):
+            b = motion_step_sum1[i].get('motion_step')
+            sum_mo1_step_after = sum_mo1_step_after + b
         
         if sum_mo1_after > sum_mo_7:
-            as1 = -((sum_mo_7-sum_mo1_after)%100)
+            as1 = -((sum_mo_7 - sum_mo1_after) % 100)
         else:
-            as1 = ((sum_mo_7-sum_mo1_after)%100)
+            as1 = ((sum_mo_7 - sum_mo1_after) % 100)
         if sum_mo1_dist_after > sum_mo_dist_7:
-            as2 = -((sum_mo_dist_7-sum_mo1_dist_after)%100)
+            as2 = -((sum_mo_dist_7 - sum_mo1_dist_after) % 100)
         else:
-            as2 = ((sum_mo_dist_7-sum_mo1_dist_after)%100)
+            as2 = ((sum_mo_dist_7 - sum_mo1_dist_after) % 100)
         if sum_mo1_step_after > sum_mo_step_7:
-            as3 = -((sum_mo_step_7-sum_mo1_step_after)%100)
+            as3 = -((sum_mo_step_7 - sum_mo1_step_after) % 100)
         else:
-            as3 = ((sum_mo_step_7-sum_mo1_step_after)%100)
-        data["calorie_total"] = round(sum_mo_7,2)
-        
-        data["calorie_percentage"] = round(as1,2)
-        data["distance_total"] = round(sum_mo_dist_7,2)
-        data["distance_percentage"] = round(as2,2)
-        data["step_total"] = round(sum_mo_step_7,2)
-        data["step_percentage"] = round(as3,2)
+            as3 = ((sum_mo_step_7 - sum_mo1_step_after) % 100)
+        data["calorie_total"] = round(sum_mo_7, 2)
+        data["calorie_percentage"] = round(as1, 2)
+        data["distance_total"] = round(sum_mo_dist_7, 2)
+        data["distance_percentage"] = round(as2, 2)
+        data["step_total"] = round(sum_mo_step_7, 2)
+        data["step_percentage"] = round(as3, 2)
         
         for day_name in week_list:
-                if day_dict.get(day_name) == None:
-                    day_dict[day_name] = 0
+            if day_dict.get(day_name) == None:
+                day_dict[day_name] = 0
         for day in queryset:
             day_dict[str(day.motion_date.strftime("%A"))] = int(day.motion_step)
         data["weekly"] = day_dict
-       
-        return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
         
+        return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StepByDateRangeHeart(APIView):
-
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
     
     def get(self, *args, **kwargs):
         from_date = self.request.GET.get("from_date")
         to_date = self.request.GET.get("to_date")
-        to_date_con=datetime.strptime(to_date, "%Y-%m-%d").date()
-        
-        to_date_con=to_date_con + timedelta(days=1)
-        
-        day_dict = {}
+        to_date_con = datetime.strptime(to_date, "%Y-%m-%d").date()
+        to_date_con = to_date_con + timedelta(days=1)
         data = {}
-        week_list = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        if from_date and to_date:         
-            queryset = HeartInfo.objects.filter(date_created__gte=from_date, date_created__lte=to_date_con)
+        if from_date and to_date:
+            queryset = HeartInfo.objects.filter(date_created__gte=from_date, date_created__lte=to_date_con,
+                                                created_by=self.request.user)
             heart_info_hr_min = queryset.values('heart_info_hr').aggregate(Min('heart_info_hr'))
             heart_info_hr_max = queryset.values('heart_info_hr').aggregate(Max('heart_info_hr'))
-            heart_info_hr_avg = queryset.values('heart_info_hr').aggregate(Avg('heart_info_hr')) 
+            heart_info_hr_avg = queryset.values('heart_info_hr').aggregate(Avg('heart_info_hr'))
             data["heart_info_hr_min"] = heart_info_hr_min.get('heart_info_hr__min')
             data["heart_info_hr_max"] = heart_info_hr_max.get('heart_info_hr__max')
             try:
-                data["heart_info_hr_avg"] = round(heart_info_hr_avg.get('heart_info_hr__avg'),2)
-                
+                data["heart_info_hr_avg"] = round(heart_info_hr_avg.get('heart_info_hr__avg'), 2)
             except:
                 data["heart_info_hr_avg"] = heart_info_hr_avg.get('heart_info_hr__avg')
-
-            return Response({"error":False, "message":"Success", "status_code":status.HTTP_200_OK, "data":data})
-        return Response({"error":True, "message":"Failed", "status_code":status.HTTP_400_BAD_REQUEST, "data":{}})
-
-
+            return Response({"error": False, "message": "Success", "status_code": status.HTTP_200_OK, "data": data})
+        return Response({"error": True, "message": "Failed", "status_code": status.HTTP_400_BAD_REQUEST, "data": {}})
