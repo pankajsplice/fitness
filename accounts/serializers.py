@@ -161,10 +161,11 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer(read_only=True)
     class Meta:
         model = User
         fields = ('id', 'username', 'email',
-                  'first_name', 'last_name')
+                  'first_name', 'last_name', 'profile')
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
