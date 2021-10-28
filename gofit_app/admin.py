@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin
-from gofit_app.models import WoHeartInfo, SleepInfo, MotionInfo, HeartInfo
+from gofit_app.models import WoHeartInfo, SleepInfo, MotionInfo, HeartInfo, SleepDataInfo
+
 
 class HeartInfoAdmin(ModelAdmin):
     list_display = ["id", "heart_info_dbp", "heart_info_hr", "heart_info_sbp", "date_created", "date_updated"]
@@ -15,7 +16,11 @@ class SleepInfoAdmin(ModelAdmin):
 class WoHeartInfoAdmin(ModelAdmin):
     list_display = ["id", "wo_heart_data", "wo_heart_date", "date_created", "date_updated"]
 
+class SleepDataInfoAdmin(ModelAdmin):
+    list_display = ["id", "sleep_date", "sleep_data", "date_created", "date_updated"]
+
 admin.site.register(HeartInfo, HeartInfoAdmin)
 admin.site.register(MotionInfo, MotionInfoAdmin)
 admin.site.register(SleepInfo, SleepInfoAdmin)
 admin.site.register(WoHeartInfo, WoHeartInfoAdmin)
+admin.site.register(SleepDataInfo, SleepDataInfoAdmin)
