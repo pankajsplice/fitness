@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.utils.timezone import now
 from rest_framework import serializers
-from .models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo, Feedback
+from .models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo, Feedback, SleepDataInfo
 from accounts.models import UserProfile
 from django.conf import settings
 from django.contrib.auth.forms import SetPasswordForm
@@ -29,6 +29,13 @@ class SleepInfoSerializer(serializers.ModelSerializer):
         model = SleepInfo
         fields = ('id', 'sleep_data', 'sleep_date', 'sleep_deep_time', 'sleep_light_time', 'sleep_stayup_time',
                   'sleep_total_time', 'avg_heart_rate', 'sleep_waking_number', 'total_time', 'date_created', 'date_updated')
+
+
+class SleepDataInfoSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = SleepDataInfo
+        fields = ('id', 'sleep_data', 'sleep_date', 'date_created', 'date_updated')
 
 
 class WoHeartInfoSerializer(serializers.ModelSerializer):

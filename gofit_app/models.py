@@ -28,6 +28,11 @@ class SleepInfo(ModelMixin):
     total_time = models.TimeField(max_length=100, null=True, blank=True)
 
 
+class SleepDataInfo(ModelMixin):
+    sleep_data = models.TextField(null=True, blank=True)
+    sleep_date = models.DateField(null=True, blank=True)
+
+
 class WoHeartInfo(ModelMixin):
     wo_heart_data = models.TextField(null=True, blank=True)
     wo_heart_date = models.DateField(null=True, blank=True)

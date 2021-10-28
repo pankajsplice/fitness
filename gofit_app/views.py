@@ -1,5 +1,8 @@
 import datetime as dt
 import time
+from datetime import datetime, timedelta
+
+from django.db.models import Avg, Min, Max
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -8,12 +11,11 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from datetime import datetime, timedelta
-from django.db.models import Avg, Min, Max, Sum
+
 from accounts.models import UserProfile
-from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo, Feedback
+from gofit_app.models import HeartInfo, MotionInfo, SleepInfo, WoHeartInfo, Feedback, SleepDataInfo
 from .serializers import HeartInfoSerializer, MotionInfoSerializer, SleepInfoSerializer, WoHeartInfoSerializer, \
-    FeedbackSerializer
+    FeedbackSerializer, SleepDataInfoSerializer
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -147,6 +149,57 @@ class SleepInfoViewSet(viewsets.ModelViewSet):
                         sleep_data.sleep_total_time = serializer.validated_data.get('sleep_total_time')
                         sleep_data.sleep_waking_number = serializer.validated_data.get('sleep_waking_number')
                         sleep_data.total_time = serializer.validated_data.get('total_time')
+                        sleep_data.save()
+                        custom_data = {
+                            "error": False,
+                            "message": 'updated successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
+                    else:
+                        self.perform_create(serializer)
+                        serializer.save()
+                        self.get_success_headers(serializer.data)
+                        custom_data = {
+                            "error": False,
+                            "message": 'created successfully',
+                            "status_code": status.HTTP_201_CREATED,
+                            "data": serializer.data
+                        }
+                        return Response(custom_data)
+                return Response({"message": "Login Required."})
+            error_data = {
+                "error": True,
+                "message": serializer.errors,
+                "status_code": status.HTTP_400_BAD_REQUEST,
+                "data": {}
+            }
+            return Response(error_data)
+        except Exception as e:
+            print(e)
+            return Response({"success": False})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SleepDataInfoViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    queryset = SleepDataInfo.objects.all()
+    serializer_class = SleepDataInfoSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        try:
+            if serializer.is_valid():
+                if self.request.user.is_authenticated:
+                    sleep_data = SleepDataInfo.objects.filter(
+                        sleep_date=serializer.validated_data.get('sleep_date')).first()
+                    if sleep_data:
+                        sleep_data.sleep_data = serializer.validated_data.get('sleep_data')
                         sleep_data.save()
                         custom_data = {
                             "error": False,
